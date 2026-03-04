@@ -208,11 +208,11 @@ local function findStrongestPetAny()
 end
 
 local function findStrongestPet3K()
-    local strongest, max = nil, 3000
+    local strongest, max = nil, 2800
     for _, obj in pairs(CollectionService:GetTagged("Roaming")) do
         local s = obj:GetAttribute("Strength")
         local o = obj:GetAttribute("OwnerId")
-        if s and s >= 3000 and (not o or o == 0) and s > max then
+        if s and s >= 2800 and (not o or o == 0) and s > max then
             max = s
             strongest = obj
         end
@@ -355,5 +355,6 @@ task.spawn(function()
     end
 
 end)
+
 
 
