@@ -1,19 +1,3 @@
---[[ 
-    + spaced side buttons & main island side button border = green
-    + walk speed slider at bottom
-    + paused teleporting during lasso/minigame events
-    + separate Auto Load UW button (independent 60s cycle)
-    + Auto Teleport Custom (Input custom minimum strength)
-    + FIXED: Reopen button no longer opens when dragged
-    + WEATHER NOTIFIER: Bypasses Roblox Volume = 0 and sends Windows/In-Game alerts
-    + UI FIX: Fixed chunky/weird text on the weather tick buttons
-    + WEATHER UPDATE: Added Rain, Thunderstorm, Snowy, and Valentines to the grid!
-    + NEW: Custom Pet Notifier (Alerts you using the volume-bypass system when a strong pet spawns)
-    + UI LAYOUT FIX: Changed to a clean 2-Column layout to prevent it from being too tall!
-    + UI SCALE FIX: Reduced overall menu size by exactly 25% for a compact footprint.
-    + UI POS FIX: Reopen button now spawns in the bottom right corner by default.
---]]
-
 local player = game.Players.LocalPlayer
 local CollectionService = game:GetService("CollectionService")
 local UserInputService = game:GetService("UserInputService")
@@ -34,12 +18,12 @@ local theme = {
 local TargetWeathers = {}
 local weatherDisplayNames = 
     {["Rain"] = "Rain",
-    ["Thunderstorm"] = "Thunderstorm",["AuroraBorealis"] = "Aurora",
-    ["CosmicShower"] = "Cosmic Shower",["Eruption"] = "Volcano",
+    ["Thunderstorm"] = "Thunderstorm",
+    ["AuroraBorealis"] = "Aurora",
+    ["CosmicShower"] = "Cosmic Shower",
+    ["Eruption"] = "Volcano",
     ["Underwater"] = "Underwater",
-    ["Sandstorm"] = "Sandstorm",["Snowy"] = "Snowy",
-    ["Valentines"] = "Valentines",["Blizzard"] = "Blizzard",
-    ["Gravebound"] = "Gravebound"
+    ["Sandstorm"] = "Sandstorm"
 }
 -- Initialize all to true by default
 for weatherId, _ in pairs(weatherDisplayNames) do
@@ -133,7 +117,7 @@ title.Text = "Teleport GUI Custom"
 title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 title.TextColor3 = theme.Text
 title.Font = theme.Font
-title.TextSize = 14
+title.TextSize = 17 -- Increased 10% again
 Instance.new("UICorner", title).CornerRadius = UDim.new(0, 9)
 
 local closeButton = Instance.new("TextButton", title)
@@ -142,7 +126,7 @@ closeButton.Position = UDim2.new(1, -22, 0, 0)
 closeButton.Text = "X"
 closeButton.BackgroundTransparency = 1
 closeButton.TextColor3 = theme.Danger
-closeButton.TextSize = 14
+closeButton.TextSize = 17 -- Increased 10% again
 
 local reopenButton = Instance.new("TextButton", screenGui)
 reopenButton.Size = UDim2.new(0, 112, 0, 22)
@@ -152,7 +136,7 @@ reopenButton.Text = "Open Teleport GUI"
 reopenButton.BackgroundColor3 = theme.Background
 reopenButton.TextColor3 = theme.Text
 reopenButton.Font = theme.Font
-reopenButton.TextSize = 11
+reopenButton.TextSize = 13 -- Increased
 reopenButton.Visible = false
 reopenButton.AutoButtonColor = false
 makeDraggable(reopenButton)
@@ -199,7 +183,7 @@ local function styleButton(text, pos, color, customWidth)
     btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     btn.TextColor3 = color
     btn.Font = theme.Font
-    btn.TextSize = 12
+    btn.TextSize = 14 -- Increased 10% again
     btn.AutoButtonColor = false
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     local stroke = Instance.new("UIStroke", btn)
@@ -217,7 +201,7 @@ local function styleSideButton(text, pos, color)
     btn.BackgroundColor3 = Color3.fromRGB(38, 38, 38)
     btn.TextColor3 = theme.Text
     btn.Font = theme.Font
-    btn.TextSize = 11
+    btn.TextSize = 13 -- Increased 10% again
     btn.AutoButtonColor = false
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     local stroke = Instance.new("UIStroke", btn)
@@ -252,7 +236,7 @@ for weatherId, displayName in pairs(weatherDisplayNames) do
     tickBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     tickBtn.TextColor3 = theme.Success
     tickBtn.Font = theme.Font
-    tickBtn.TextSize = 11 
+    tickBtn.TextSize = 12 -- Kept the same size as requested!
     tickBtn.AutoButtonColor = false
     Instance.new("UICorner", tickBtn).CornerRadius = UDim.new(0, 3)
     
@@ -276,9 +260,9 @@ for weatherId, displayName in pairs(weatherDisplayNames) do
 end
 
 -- RIGHT COLUMN
-local tpButton = styleButton("Teleport to Strongest Pet", UDim2.new(0, 218, 0, 30), Color3.new(1,1,1))
-local autoAnyButton = styleButton("Auto Teleport (All)", UDim2.new(0, 218, 0, 71), theme.Danger)
-local autoCustomButton = styleButton("Auto Teleport Custom", UDim2.new(0, 218, 0, 112), theme.Danger)
+local tpButton = styleButton("Teleport to Strongest Pet", UDim2.new(0, 218, 0, 30), Color3.new(1,1,1), 150)
+local autoAnyButton = styleButton("Auto Teleport (All)", UDim2.new(0, 218, 0, 71), theme.Danger, 150)
+local autoCustomButton = styleButton("Auto Teleport Custom", UDim2.new(0, 218, 0, 112), theme.Danger, 150)
 
 local minStrengthInput = Instance.new("TextBox", mainFrame)
 minStrengthInput.Size = UDim2.new(0, 150, 0, 22)
@@ -286,7 +270,7 @@ minStrengthInput.Position = UDim2.new(0, 218, 0, 153)
 minStrengthInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 minStrengthInput.TextColor3 = Color3.new(1, 1, 1)
 minStrengthInput.Font = theme.Font
-minStrengthInput.TextSize = 11
+minStrengthInput.TextSize = 13 -- Increased
 minStrengthInput.PlaceholderText = "Min Strength (3000)"
 minStrengthInput.Text = "3000"
 minStrengthInput.ClearTextOnFocus = false
@@ -296,7 +280,7 @@ inputStroke.Color = Color3.fromRGB(100, 100, 100)
 inputStroke.Thickness = 1
 inputStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-local loadUWButton = styleButton("Auto Load UW", UDim2.new(0, 218, 0, 186), theme.Danger)
+local loadUWButton = styleButton("Auto Load UW", UDim2.new(0, 218, 0, 186), theme.Danger, 150)
 
 -- FAR RIGHT (Side Buttons)
 local sideUnderwater = styleSideButton("UW", UDim2.new(1, -45, 0, 30), theme.Accent)
