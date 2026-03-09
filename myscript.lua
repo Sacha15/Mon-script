@@ -18,12 +18,10 @@ local theme = {
 local TargetWeathers = {}
 local weatherDisplayNames = 
     {["Rain"] = "Rain",
-    ["Thunderstorm"] = "Thunderstorm",
-    ["AuroraBorealis"] = "Aurora",
-    ["CosmicShower"] = "Cosmic Shower",
-    ["Eruption"] = "Volcano",
-    ["Underwater"] = "Underwater",
-    ["Sandstorm"] = "Sandstorm"
+    ["Thunderstorm"] = "Thunderstorm",["AuroraBorealis"] = "Aurora",
+    ["CosmicShower"] = "Cosmic Shower",["Eruption"] = "Volcano",
+    ["Underwater"] = "Underwater",["Sandstorm"] = "Sandstorm",["Snowy"] = "Snowy",
+    ["Valentines"] = "Valentines",["Blizzard"] = "Blizzard",["Gravebound"] = "Gravebound"
 }
 -- Initialize all to true by default
 for weatherId, _ in pairs(weatherDisplayNames) do
@@ -101,10 +99,10 @@ local function makeDraggable(gui)
     end)
 end
 
--- Main Frame (25% Smaller: 420x285)
+-- Main Frame (Adjusted Height to 310 to fit new button)
 local mainFrame = Instance.new("Frame", screenGui)
-mainFrame.Size = UDim2.new(0, 420, 0, 285)
-mainFrame.Position = UDim2.new(0.5, -210, 0.5, -142)
+mainFrame.Size = UDim2.new(0, 420, 0, 310)
+mainFrame.Position = UDim2.new(0.5, -210, 0.5, -155)
 mainFrame.BackgroundColor3 = theme.Background
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
@@ -117,7 +115,7 @@ title.Text = "Teleport GUI Custom"
 title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 title.TextColor3 = theme.Text
 title.Font = theme.Font
-title.TextSize = 17 -- Increased 10% again
+title.TextSize = 17 
 Instance.new("UICorner", title).CornerRadius = UDim.new(0, 9)
 
 local closeButton = Instance.new("TextButton", title)
@@ -126,17 +124,16 @@ closeButton.Position = UDim2.new(1, -22, 0, 0)
 closeButton.Text = "X"
 closeButton.BackgroundTransparency = 1
 closeButton.TextColor3 = theme.Danger
-closeButton.TextSize = 17 -- Increased 10% again
+closeButton.TextSize = 17 
 
 local reopenButton = Instance.new("TextButton", screenGui)
 reopenButton.Size = UDim2.new(0, 112, 0, 22)
--- Placed in the bottom right corner (with 20px padding from the edges)
 reopenButton.Position = UDim2.new(1, -132, 1, -42)
 reopenButton.Text = "Open Teleport GUI"
 reopenButton.BackgroundColor3 = theme.Background
 reopenButton.TextColor3 = theme.Text
 reopenButton.Font = theme.Font
-reopenButton.TextSize = 13 -- Increased
+reopenButton.TextSize = 13 
 reopenButton.Visible = false
 reopenButton.AutoButtonColor = false
 makeDraggable(reopenButton)
@@ -183,7 +180,7 @@ local function styleButton(text, pos, color, customWidth)
     btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     btn.TextColor3 = color
     btn.Font = theme.Font
-    btn.TextSize = 14 -- Increased 10% again
+    btn.TextSize = 14 
     btn.AutoButtonColor = false
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     local stroke = Instance.new("UIStroke", btn)
@@ -201,7 +198,7 @@ local function styleSideButton(text, pos, color)
     btn.BackgroundColor3 = Color3.fromRGB(38, 38, 38)
     btn.TextColor3 = theme.Text
     btn.Font = theme.Font
-    btn.TextSize = 13 -- Increased 10% again
+    btn.TextSize = 13
     btn.AutoButtonColor = false
     Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
     local stroke = Instance.new("UIStroke", btn)
@@ -236,7 +233,7 @@ for weatherId, displayName in pairs(weatherDisplayNames) do
     tickBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
     tickBtn.TextColor3 = theme.Success
     tickBtn.Font = theme.Font
-    tickBtn.TextSize = 12 -- Kept the same size as requested!
+    tickBtn.TextSize = 12 
     tickBtn.AutoButtonColor = false
     Instance.new("UICorner", tickBtn).CornerRadius = UDim.new(0, 3)
     
@@ -270,7 +267,7 @@ minStrengthInput.Position = UDim2.new(0, 218, 0, 153)
 minStrengthInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 minStrengthInput.TextColor3 = Color3.new(1, 1, 1)
 minStrengthInput.Font = theme.Font
-minStrengthInput.TextSize = 13 -- Increased
+minStrengthInput.TextSize = 13 
 minStrengthInput.PlaceholderText = "Min Strength (3000)"
 minStrengthInput.Text = "3000"
 minStrengthInput.ClearTextOnFocus = false
@@ -281,6 +278,9 @@ inputStroke.Thickness = 1
 inputStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
 local loadUWButton = styleButton("Auto Load UW", UDim2.new(0, 218, 0, 186), theme.Danger, 150)
+
+-- NEW BOSS TOGGLE BUTTON
+local targetBossButton = styleButton("Target Bosses: ON", UDim2.new(0, 218, 0, 227), theme.Success, 150)
 
 -- FAR RIGHT (Side Buttons)
 local sideUnderwater = styleSideButton("UW", UDim2.new(1, -45, 0, 30), theme.Accent)
@@ -331,6 +331,7 @@ local glowCustom = createGlow(autoCustomButton, theme.Danger)
 local glowUW = createGlow(loadUWButton, theme.Danger)
 local glowPetNotif = createGlow(petNotifButton, theme.Accent)
 local glowWeather = createGlow(weatherButton, theme.Accent)
+local glowBoss = createGlow(targetBossButton, theme.Success)
 
 local function startGlow(glow)
     for _, t in ipairs(glow.tweens) do t:Cancel() end
@@ -348,12 +349,23 @@ local function stopGlow(glow)
     glow.outer.Transparency = 1; glow.inner.Transparency = 1; glow.grad.Rotation = 0
 end
 
+local targetBossesEnabled = true
+startGlow(glowBoss) -- default on
+
+---------------------------------------------------------------------
+-- PET FINDER LOGIC (Now safely excludes Bosses if toggled OFF)
+---------------------------------------------------------------------
 local function findStrongestPetAny()
     local strongest, max = nil, 0
     for _, obj in pairs(CollectionService:GetTagged("Roaming")) do
         local s = obj:GetAttribute("Strength")
         local o = obj:GetAttribute("OwnerId")
+        local r = obj:GetAttribute("Rarity")
+        
         if s and (not o or o == 0) and s > max then
+            if not targetBossesEnabled and r == "Boss" then
+                continue
+            end
             max = s; strongest = obj
         end
     end
@@ -365,7 +377,12 @@ local function findStrongestPetCustom(minStrength)
     for _, obj in pairs(CollectionService:GetTagged("Roaming")) do
         local s = obj:GetAttribute("Strength")
         local o = obj:GetAttribute("OwnerId")
+        local r = obj:GetAttribute("Rarity")
+        
         if s and s >= minStrength and (not o or o == 0) and s > max then
+            if not targetBossesEnabled and r == "Boss" then
+                continue
+            end
             max = s; strongest = obj
         end
     end
@@ -449,6 +466,16 @@ loadUWButton.MouseButton1Click:Connect(function()
         startGlow(glowUW); loadUWButton.UIStroke.Color = Color3.new(1,1,1); loadUWButton.TextColor3 = Color3.new(1,1,1)
     else
         stopGlow(glowUW); loadUWButton.UIStroke.Color = theme.Danger; loadUWButton.TextColor3 = theme.Danger
+    end
+end)
+
+targetBossButton.MouseButton1Click:Connect(function()
+    targetBossesEnabled = not targetBossesEnabled
+    targetBossButton.Text = "Target Bosses: " .. (targetBossesEnabled and "ON" or "OFF")
+    if targetBossesEnabled then
+        startGlow(glowBoss); targetBossButton.UIStroke.Color = theme.Success; targetBossButton.TextColor3 = theme.Success
+    else
+        stopGlow(glowBoss); targetBossButton.UIStroke.Color = theme.Danger; targetBossButton.TextColor3 = theme.Danger
     end
 end)
 
@@ -539,7 +566,14 @@ task.spawn(function()
                 for _, obj in pairs(CollectionService:GetTagged("Roaming")) do
                     local s = obj:GetAttribute("Strength")
                     local o = obj:GetAttribute("OwnerId")
+                    local r = obj:GetAttribute("Rarity")
+                    
                     if s and s >= currentMinStrength and (not o or o == 0) then
+                        -- Prevent Boss alerts if toggle is OFF
+                        if not targetBossesEnabled and r == "Boss" then
+                            continue
+                        end
+                        
                         if not notifiedPets[obj] then
                             notifiedPets[obj] = true
                             local petName = obj:GetAttribute("Name") or "A rare pet"
