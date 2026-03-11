@@ -1,3 +1,20 @@
+--[[ 
+    + spaced side buttons & main island side button border = green
+    + walk speed slider at bottom
+    + paused teleporting during lasso/minigame events
+    + separate Auto Load UW button (independent 60s cycle)
+    + Auto Teleport Custom (Input custom minimum strength)
+    + FIXED: Reopen button no longer opens when dragged
+    + WEATHER NOTIFIER: Bypasses Roblox Volume = 0 using a loud audio ping!
+    + WEATHER UPDATE: Added Rain, Thunderstorm, Snowy, and Valentines to the grid!
+    + NEW: Custom Pet Notifier (Alerts you using the volume-bypass system when a strong pet spawns)
+    + BOSS UPDATE: Added "Target Bosses" toggle! Prevents teleporting/notifying for Bosses when disabled.
+    + SCHEDULER FIX: Removed Windows messagebox (causes executor crashes) and wrapped InvokeServer properly.
+    + INSTANT CATCH 100% FIXED: Directly targets ReplicatedStorage.Remotes using the exact decompiled arguments!
+    + CO-OP BOSS HOLDER: Latches onto Bosses and holds max progress for 5 minutes waiting for a 2nd player!
+    + AUTO LUCKY BLOCK: Hunts down and instantly catches Lucky Blocks to farm infinite Steaks/Food!
+--]]
+
 local player = game.Players.LocalPlayer
 local CollectionService = game:GetService("CollectionService")
 local UserInputService = game:GetService("UserInputService")
@@ -14,20 +31,13 @@ local theme = {
     Font = Enum.Font.SourceSansBold
 }
 
--- Dictionary to store active weathers 
 local TargetWeathers = {}
 local weatherDisplayNames = {
-    ["Rain"] = "Rain", 
-    ["Thunderstorm"] = "Thunderstorm",
-    ["AuroraBorealis"] = "Aurora",
-    ["CosmicShower"] = "Cosmic Shower",
-    ["Eruption"] = "Volcano", 
-    ["Underwater"] = "Underwater",
-    ["Sandstorm"] = "Sandstorm"
+    ["Rain"] = "Rain", ["Thunderstorm"] = "Thunderstorm",
+    ["AuroraBorealis"] = "Aurora", ["CosmicShower"] = "Cosmic Shower", ["Eruption"] = "Volcano", ["Underwater"] = "Underwater",
+    ["Sandstorm"] = "Sandstorm", ["Snowy"] = "Snowy", ["Valentines"] = "Valentines", ["Blizzard"] = "Blizzard", ["Gravebound"] = "Gravebound"
 }
-for weatherId, _ in pairs(weatherDisplayNames) do
-    TargetWeathers[weatherId] = true
-end
+for weatherId, _ in pairs(weatherDisplayNames) do TargetWeathers[weatherId] = true end
 
 ---------------------------------------------------------------------
 -- ROBUST NOTIFICATION HANDLER (Safe Sound Bypass)
@@ -37,24 +47,18 @@ local function sendOSNotification(title, text)
         pcall(function()
             local gameSettings = UserSettings():GetService("UserGameSettings")
             local originalVolume = gameSettings.MasterVolume
-            
             if originalVolume == 0 then gameSettings.MasterVolume = 0.5 end
-            
             local sound = Instance.new("Sound", workspace)
             sound.SoundId = "rbxassetid://4590657391" 
             sound.Volume = 3
             sound:Play()
-            
             task.delay(2.5, function()
                 if originalVolume == 0 then gameSettings.MasterVolume = 0 end
                 sound:Destroy()
             end)
         end)
     end)
-
-    pcall(function()
-        StarterGui:SetCore("SendNotification", {Title = title, Text = text, Duration = 10})
-    end)
+    pcall(function() StarterGui:SetCore("SendNotification", {Title = title, Text = text, Duration = 10}) end)
 end
 
 local guiParent = (gethui and gethui()) or game:GetService("CoreGui")
@@ -67,9 +71,7 @@ local function makeDraggable(gui)
     gui.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             dragging = true; dragStart = input.Position; startPos = gui.Position
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then dragging = false end
-            end)
+            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
         end
     end)
     gui.InputChanged:Connect(function(input)
@@ -83,7 +85,9 @@ local function makeDraggable(gui)
     end)
 end
 
--- Main Frame (Perfectly Sized 420x335)
+-- ==========================================
+-- MAIN FRAME SETUP (2-Column Layout)
+-- ==========================================
 local mainFrame = Instance.new("Frame", screenGui)
 mainFrame.Size = UDim2.new(0, 420, 0, 335)
 mainFrame.Position = UDim2.new(0.5, -210, 0.5, -167)
@@ -111,6 +115,7 @@ closeButton.TextColor3 = theme.Danger
 closeButton.TextSize = 17 
 
 local reopenButton = Instance.new("TextButton", screenGui)
+reopenButton.Name = "ReopenButton"
 reopenButton.Size = UDim2.new(0, 112, 0, 22)
 reopenButton.Position = UDim2.new(1, -132, 1, -42)
 reopenButton.Text = "Open Teleport GUI"
@@ -150,6 +155,25 @@ local function styleButton(text, pos, color, customWidth, customHeight)
     stroke.Thickness = 1
     stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
     return btn
+end
+
+local function styleTextBox(placeholder, pos, customWidth)
+    local tb = Instance.new("TextBox", mainFrame)
+    tb.Size = UDim2.new(0, customWidth or 150, 0, 25)
+    tb.Position = pos
+    tb.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    tb.TextColor3 = Color3.new(1, 1, 1)
+    tb.Font = theme.Font
+    tb.TextSize = 13
+    tb.PlaceholderText = placeholder
+    tb.Text = ""
+    tb.ClearTextOnFocus = false
+    Instance.new("UICorner", tb).CornerRadius = UDim.new(0, 4)
+    local strk = Instance.new("UIStroke", tb)
+    strk.Color = Color3.fromRGB(100, 100, 100)
+    strk.Thickness = 1
+    strk.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    return tb
 end
 
 local function styleSideButton(text, pos, color)
@@ -201,14 +225,20 @@ for weatherId, displayName in pairs(weatherDisplayNames) do
     tickBtn.AutoButtonColor = false
     Instance.new("UICorner", tickBtn).CornerRadius = UDim.new(0, 3)
     local strk = Instance.new("UIStroke", tickBtn)
-    strk.Color = theme.Success; strk.Thickness = 1; strk.ApplyStrokeMode = Enum.ApplyStrokeMode.Border 
+    strk.Color = theme.Success
+    strk.Thickness = 1
+    strk.ApplyStrokeMode = Enum.ApplyStrokeMode.Border 
     
     tickBtn.MouseButton1Click:Connect(function()
         TargetWeathers[weatherId] = not TargetWeathers[weatherId]
         if TargetWeathers[weatherId] then
-            tickBtn.Text = "✅ " .. displayName; tickBtn.TextColor3 = theme.Success; strk.Color = theme.Success
+            tickBtn.Text = "✅ " .. displayName
+            tickBtn.TextColor3 = theme.Success
+            strk.Color = theme.Success
         else
-            tickBtn.Text = "❌ " .. displayName; tickBtn.TextColor3 = theme.Danger; strk.Color = theme.Danger
+            tickBtn.Text = "❌ " .. displayName
+            tickBtn.TextColor3 = theme.Danger
+            strk.Color = theme.Danger
         end
     end)
 end
@@ -218,24 +248,12 @@ local tpButton = styleButton("Teleport to Strongest", UDim2.new(0, 215, 0, 30), 
 local autoAnyButton = styleButton("Auto Teleport (All)", UDim2.new(0, 215, 0, 65), theme.Danger, 150)
 local autoCatchAnyButton = styleButton("Auto Catch (All)", UDim2.new(0, 215, 0, 100), theme.Danger, 150)
 
-local minStrengthInput = Instance.new("TextBox", mainFrame)
-minStrengthInput.Size = UDim2.new(0, 150, 0, 25)
-minStrengthInput.Position = UDim2.new(0, 215, 0, 135)
-minStrengthInput.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-minStrengthInput.TextColor3 = Color3.new(1, 1, 1)
-minStrengthInput.Font = theme.Font
-minStrengthInput.TextSize = 13 
-minStrengthInput.PlaceholderText = "Min Strength (3000)"
+local minStrengthInput = styleTextBox("Min Strength (3000)", UDim2.new(0, 215, 0, 135), 150)
 minStrengthInput.Text = "3000"
-minStrengthInput.ClearTextOnFocus = false
-Instance.new("UICorner", minStrengthInput).CornerRadius = UDim.new(0, 4)
-local inputStroke = Instance.new("UIStroke", minStrengthInput)
-inputStroke.Color = Color3.fromRGB(100, 100, 100)
-inputStroke.Thickness = 1
-inputStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
 local autoCustomButton = styleButton("Auto TP Custom", UDim2.new(0, 215, 0, 165), theme.Danger, 150)
 local autoCatchCustomButton = styleButton("Auto Catch Custom", UDim2.new(0, 215, 0, 200), theme.Danger, 150)
+local autoLuckyBlockButton = styleButton("Auto Lucky Block (Food)", UDim2.new(0, 215, 0, 235), theme.Danger, 150)
 
 -- FAR RIGHT (Side Buttons)
 local sideUnderwater = styleSideButton("UW", UDim2.new(1, -45, 0, 30), theme.Accent)
@@ -285,6 +303,7 @@ local glowAll = createGlow(autoAnyButton, theme.Danger)
 local glowCatchAll = createGlow(autoCatchAnyButton, theme.Danger)
 local glowCustom = createGlow(autoCustomButton, theme.Danger)
 local glowCatchCustom = createGlow(autoCatchCustomButton, theme.Danger)
+local glowLuckyBlock = createGlow(autoLuckyBlockButton, theme.Danger)
 
 local glowUW = createGlow(loadUWButton, theme.Danger)
 local glowPetNotif = createGlow(petNotifButton, theme.Accent)
@@ -338,6 +357,17 @@ local function findStrongestPetCustom(minStrength)
     return strongest
 end
 
+local function findLuckyBlock()
+    for _, obj in pairs(CollectionService:GetTagged("Roaming")) do
+        local n = obj:GetAttribute("Name")
+        local o = obj:GetAttribute("OwnerId")
+        if n and string.find(n, "Lucky Block") and (not o or o == 0) then
+            return obj
+        end
+    end
+    return nil
+end
+
 local function isPlayerBusy()
     for _, obj in pairs(CollectionService:GetTagged("Roaming")) do
         if obj:GetAttribute("OwnerId") == player.UserId then return true end
@@ -360,7 +390,7 @@ local function isPlayerBusy()
 end
 
 ---------------------------------------------------------------------
--- 🚨 INSTANT SILENT CATCH BYPASS (USING EXACT SOURCE CODE REMOTES)
+-- 🚨 INSTANT CATCH BYPASS & BOSS CO-OP HOLDER
 ---------------------------------------------------------------------
 local function equipLasso()
     local char = player.Character
@@ -377,13 +407,14 @@ local function equipLasso()
     end
     
     hum:UnequipTools()
-    
     for _, tool in ipairs(player.Backpack:GetChildren()) do
         if tool:IsA("Tool") then
             local tName = tool.Name:lower()
             if tName:find("lasso") or tName:find("rope") or tName:find("wrangler") or tName:find("tether") then
                 hum:EquipTool(tool)
-                task.wait(0.2) -- Let server sync equipped tool
+                local t = tick()
+                while tool.Parent ~= char and tick() - t < 1 do task.wait(0.05) end
+                task.wait(0.1) 
                 return tool.Parent == char
             end
         end
@@ -399,7 +430,6 @@ local function attemptCatch(pet)
         local Remotes = RS:FindFirstChild("Remotes")
         if not Remotes then return end
         
-        -- Exact remotes found in the decompiled source code!
         local throwLasso = Remotes:FindFirstChild("ThrowLasso")
         local minigameReq = Remotes:FindFirstChild("minigameRequest")
         local updateProgress = Remotes:FindFirstChild("UpdateProgress")
@@ -408,42 +438,34 @@ local function attemptCatch(pet)
         local root = char and char:FindFirstChild("HumanoidRootPart")
         if not root then return end
         
-        -- Calculate the exact Math Vector expected by the server
         local charCFrame = root.CFrame
         local targetPos = pet:GetPivot().Position
         local charPos = charCFrame.Position
         local dir = Vector3.new(targetPos.X - charPos.X, 0, targetPos.Z - charPos.Z)
         if dir.Magnitude > 0 then dir = dir.Unit else dir = charCFrame.LookVector end
 
-        -- 1. Fake the throw (Charge Power 0.9, Target Direction Vector)
-        if throwLasso then
-            pcall(function() throwLasso:FireServer(0.9, dir) end)
-        end
-
+        if throwLasso then pcall(function() throwLasso:FireServer(0.9, dir) end) end
         task.wait(0.15)
         
-        -- 2. Request Minigame Validation (Args: Pet Object, Pet's CFrame)
-        if minigameReq then
-            pcall(function() minigameReq:InvokeServer(pet, pet:GetPivot()) end)
-        end
-
+        if minigameReq then pcall(function() minigameReq:InvokeServer(pet, pet:GetPivot()) end) end
         task.wait(0.15)
 
-        -- 3. WIN MINIGAME INSTANTLY
         if updateProgress then
-            -- 100 instantly wins regular pets
-            pcall(function() updateProgress:FireServer(100) end)
-            
-            -- If it's a boss, spam 1 to rapidly fulfill the click requirement
             if pet:GetAttribute("Rarity") == "Boss" then
-                for i = 1, 35 do
-                    pcall(function() updateProgress:FireServer(1) end)
-                    task.wait(0.05)
-                end
+                task.spawn(function()
+                    local elapsed = 0
+                    while pet and pet.Parent and pet:GetAttribute("OwnerId") == 0 and elapsed < 300 do
+                        pcall(function() updateProgress:FireServer(1) end)
+                        pcall(function() updateProgress:FireServer(2) end)
+                        task.wait(0.1)
+                        elapsed = elapsed + 0.1
+                    end
+                end)
+            else
+                pcall(function() updateProgress:FireServer(100) end)
             end
         end
         
-        -- Fallback: Force client script to win/cleanup minigame if UI appears locally
         pcall(function()
             local handler = require(game:GetService("StarterPlayer").StarterPlayerScripts.Controllers.Visuals.lassoController.lassoMinigameHandler)
             if handler then
@@ -454,8 +476,10 @@ local function attemptCatch(pet)
 end
 
 local function waitForCatch(pet)
+    local isBoss = pet:GetAttribute("Rarity") == "Boss"
+    local timeout = isBoss and 300 or 2.5 
     local elapsed = 0
-    while elapsed < 2.5 do
+    while elapsed < timeout do
         if not pet or not pet.Parent then break end
         local owner = pet:GetAttribute("OwnerId")
         if owner and owner ~= 0 then break end
@@ -469,10 +493,12 @@ local mainIsland = CFrame.new(-105.803, 830.677, -2745.03)
 local function smartTeleport(root, pet)
     local targetPos = pet:GetPivot().Position
     local offsetPos = targetPos + Vector3.new(0, 0, 4) 
-    -- Face the pet so the character raycast is mathematically accurate
     root.CFrame = CFrame.lookAt(offsetPos, Vector3.new(targetPos.X, offsetPos.Y, targetPos.Z))
 end
 
+---------------------------------------------------------------------
+-- BUTTON CONNECTIONS
+---------------------------------------------------------------------
 tpButton.MouseButton1Click:Connect(function()
     local pet = findStrongestPetAny()
     local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
@@ -525,6 +551,14 @@ autoCatchCustomButton.MouseButton1Click:Connect(function()
     end
 end)
 
+local autoLuckyBlockEnabled = false
+autoLuckyBlockButton.MouseButton1Click:Connect(function()
+    autoLuckyBlockEnabled = not autoLuckyBlockEnabled
+    autoLuckyBlockButton.Text = "Auto Lucky Block: " .. (autoLuckyBlockEnabled and "ON" or "OFF")
+    if autoLuckyBlockEnabled then startGlow(glowLuckyBlock); autoLuckyBlockButton.UIStroke.Color = theme.Success; autoLuckyBlockButton.TextColor3 = theme.Success
+    else stopGlow(glowLuckyBlock); autoLuckyBlockButton.UIStroke.Color = theme.Danger; autoLuckyBlockButton.TextColor3 = theme.Danger end
+end)
+
 local autoLoadUW = false
 loadUWButton.MouseButton1Click:Connect(function()
     autoLoadUW = not autoLoadUW
@@ -575,8 +609,7 @@ UserInputService.InputChanged:Connect(function(input)
         knob.Position = UDim2.new(0, relX, 0, 0)
         local speed = 30 + (relX/sliderBar.AbsoluteSize.X)*(200-30)
         local char = player.Character
-        local hum = char and char:FindFirstChildOfClass("Humanoid")
-        if hum then hum.WalkSpeed = speed end
+        if char and char:FindFirstChildOfClass("Humanoid") then char:FindFirstChildOfClass("Humanoid").WalkSpeed = speed end
     end
 end)
 
@@ -595,7 +628,6 @@ task.spawn(function()
     while true do
         task.wait(0.5)
 
-        -- WEATHER NOTIFIER
         if weatherNotifEnabled then
             pcall(function()
                 local current = nil
@@ -615,7 +647,6 @@ task.spawn(function()
             end)
         end
 
-        -- PET NOTIFIER
         if customPetNotifEnabled then
             pcall(function()
                 for _, obj in pairs(CollectionService:GetTagged("Roaming")) do
@@ -665,10 +696,7 @@ task.spawn(function()
                 if pet then
                     currentlyCatching = true
                     smartTeleport(root, pet)
-                    if equipLasso() then
-                        attemptCatch(pet)
-                        waitForCatch(pet) 
-                    end
+                    if equipLasso() then attemptCatch(pet); waitForCatch(pet) end
                     currentlyCatching = false
                 end
             elseif autoCatchAll then
@@ -676,10 +704,15 @@ task.spawn(function()
                 if pet then
                     currentlyCatching = true
                     smartTeleport(root, pet)
-                    if equipLasso() then
-                        attemptCatch(pet)
-                        waitForCatch(pet) 
-                    end
+                    if equipLasso() then attemptCatch(pet); waitForCatch(pet) end
+                    currentlyCatching = false
+                end
+            elseif autoLuckyBlockEnabled then
+                local pet = findLuckyBlock()
+                if pet then
+                    currentlyCatching = true
+                    smartTeleport(root, pet)
+                    if equipLasso() then attemptCatch(pet); waitForCatch(pet) end
                     currentlyCatching = false
                 end
             elseif autoModeCustom then
